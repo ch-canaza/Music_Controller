@@ -10,9 +10,35 @@ from rest_framework.response import Response
 
 
 class RoomView(generics.ListAPIView):
+    """
+        class that show room
+    """
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
 
+class GetRoom(APIView):
+    """ class that defines methods to get rooms by code
+    """
+    serializer_class = RoomSerializer
+    lookup_url_kwargs = 'code'
+
+    def get(self, request, format=None):
+        """
+            methodt that obtains info about room
+            * .GET information about url
+            * .get parameters in that url matching 'code'
+            * look for the room with that code
+            * get the room and serializes
+        """
+        code = request.GET.get(self.lookup_url_kwargs)
+        if code != None:
+            room = Room.objects.filter(code=code)
+            if len(room) > 0:
+                data = RoomSerializer(room[0]).data  
+                data['is_host'] = self.request.session.session_key == room[0].host
+                return Response(data, status=status.HTTP_200_OK)
+            return Response({'Room Not Found': 'Invalid Room Code.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'Bad Rquest': 'Code parameter not found in request'}, status=status.HTTP_400_BAD_REQUEST)
 
 class CreateRoomView(APIView):
     """ class that allows creation of new rooms """
